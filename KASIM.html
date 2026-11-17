@@ -1,0 +1,299 @@
+!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Kasımpatı Buketi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,400;1,500&family=Jost:wght@400;500&display=swap">
+<style>
+/* Layout: tek ortalı sütun — tuvalde çizilen buket, altında çiçekçi etiketi gibi bir not kartı */
+:root{
+  --bg:#170f13;
+  --bg-glow:#35212b;
+  --card:#f2e8d7;
+  --ink:#2b1b20;
+  --ink-soft:#7d6559;
+  --muted:#bfa99d;
+  --line:rgba(242,232,215,.28);
+  --f-note:"Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --f-ui:"Jost", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme:dark;
+}
+html{background:var(--bg)}
+body{
+  background:radial-gradient(ellipse 75% 55% at 50% 30%, var(--bg-glow), var(--bg) 72%) var(--bg);
+  color:var(--card);
+  font-family:var(--f-ui);
+  min-height:100%;
+}
+main{
+  display:flex;flex-direction:column;align-items:center;gap:22px;
+  padding-block:20px 56px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+canvas{display:block;width:min(100%,560px);max-width:100%;aspect-ratio:1000/1100;height:auto}
+.tag{
+  position:relative;
+  margin-top:-44px;
+  background:var(--card);
+  color:var(--ink);
+  padding:34px 40px 24px;
+  border-radius:3px;
+  max-width:340px;width:100%;
+  text-align:center;
+  transform:rotate(-1.6deg);
+  box-shadow:0 18px 40px rgba(0,0,0,.45), 0 2px 0 rgba(0,0,0,.08);
+}
+.tag::before{
+  content:"";position:absolute;top:12px;left:50%;width:10px;height:10px;margin-left:-5px;
+  border-radius:50%;background:var(--bg);box-shadow:inset 0 1px 2px rgba(0,0,0,.6);
+}
+.note{
+  margin:0;
+  font-family:var(--f-note);font-style:italic;font-weight:500;
+  font-size:clamp(1.55rem, 5.4vw, 1.95rem);line-height:1.22;
+  text-wrap:balance;
+}
+.date{
+  margin:18px 0 0;
+  font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);
+}
+button{
+  font-family:var(--f-ui);font-size:.85rem;letter-spacing:.04em;
+  color:var(--muted);background:transparent;
+  border:1px solid var(--line);border-radius:999px;
+  padding:9px 20px;cursor:pointer;
+}
+button:hover{color:var(--card);border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--card);outline-offset:3px}
+</style>
+
+<main>
+  <canvas id="buket" role="img" aria-label="Sarı, bordo, beyaz, bakır ve pembe kasımpatılardan oluşan, kraft kâğıda sarılı ve kurdeleyle bağlanmış bir buket"></canvas>
+  <div class="tag">
+    <p class="note">Ne ilk Kasım,<br>ne ilk kasımpatı.<br>Ne son Kasım,<br>ne son kasımpatı.</p>
+    <p class="date">17 Kasım 2026</p>
+  </div>
+  <button id="yeni" type="button">Yeni buket bağla</button>
+</main>
+
+<script>
+(function(){
+const W=1000,H=1100;
+const cv=document.getElementById('buket');
+const ctx=cv.getContext('2d');
+let S=1, seed=20261117;
+
+function rngFrom(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const clamp=v=>Math.max(0,Math.min(100,v));
+const col=(c,dh,dl,a)=>`hsla(${c[0]+dh},${c[1]}%,${clamp(c[2]+dl)}%,${a==null?1:a})`;
+
+const PAL={
+  sari:   {b:[34,80,28], m:[42,92,50], t:[50,96,72]},
+  bordo:  {b:[344,65,13],m:[348,60,27],t:[352,55,46]},
+  beyaz:  {b:[75,22,48], m:[55,30,82], t:[45,45,96]},
+  bakir:  {b:[14,70,22], m:[22,80,42], t:[32,86,63]},
+  pembe:  {b:[330,35,36],m:[335,50,63],t:[340,65,86]}
+};
+const YESIL={b:[95,30,16],m:[100,32,27],t:[105,30,38]};
+
+function petal(a,l,w,k,curl,pal,rng){
+  ctx.save();ctx.rotate(a);
+  const b=l*0.08, ct=curl*w*2, jit=(rng()-.5)*6;
+  const g=ctx.createLinearGradient(0,0,l,0);
+  g.addColorStop(0,col(pal.b,jit,0));
+  g.addColorStop(0.55,col(pal.m,jit,-k*4));
+  g.addColorStop(1,col(pal.t,jit,-k*10+(rng()-.5)*8));
+  ctx.beginPath();ctx.moveTo(b,0);
+  ctx.bezierCurveTo(l*0.35,-w*0.7,l*0.8,-w+ct,l,-w*0.2+ct);
+  ctx.quadraticCurveTo(l*1.04,ct,l,w*0.2+ct);
+  ctx.bezierCurveTo(l*0.8,w+ct,l*0.35,w*0.7,b,0);
+  ctx.fillStyle=g;ctx.fill();
+  ctx.strokeStyle='rgba(20,5,10,.2)';ctx.lineWidth=Math.max(0.5,w*0.06);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(l*0.2,0);ctx.quadraticCurveTo(l*0.6,ct*0.5,l*0.9,ct);
+  ctx.strokeStyle='rgba(255,250,240,.13)';ctx.lineWidth=w*0.14;ctx.stroke();
+  ctx.restore();
+}
+
+function mum(f,rng){
+  const r=f.r,pal=f.pal;
+  ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.rot);ctx.scale(1,f.sq);
+  // gölge diski
+  ctx.save();ctx.shadowColor='rgba(8,2,5,.55)';ctx.shadowBlur=r*0.4*S;ctx.shadowOffsetY=r*0.14*S;
+  ctx.fillStyle=col(pal.b,0,-4);ctx.beginPath();ctx.arc(0,0,r*(f.open?0.8:0.6),0,Math.PI*2);ctx.fill();ctx.restore();
+  if(!f.open){
+    for(let j=0;j<8;j++)petal(j/8*Math.PI*2+rng()*0.3,r*1.02,r*0.2,0,(rng()-.5)*0.3,YESIL,rng);
+  }
+  const L=f.open?8:5, reach=f.open?1:0.72;
+  for(let i=0;i<L;i++){
+    const k=i/(L-1), len=r*reach*(1-k*0.8);
+    if(i>0){
+      const g=ctx.createRadialGradient(0,0,len*0.6,0,0,len*1.25);
+      g.addColorStop(0,'rgba(15,4,8,.42)');g.addColorStop(1,'rgba(15,4,8,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,len*1.25,0,Math.PI*2);ctx.fill();
+    }
+    const n=Math.round((f.open?28:18)-k*10+rng()*4);
+    const w=r*(0.12-k*0.045)*(f.open?1:1.25);
+    const off=rng()*Math.PI*2;
+    for(let j=0;j<n;j++){
+      const a=off+j/n*Math.PI*2+(rng()-.5)*0.16;
+      petal(a,len*(0.85+rng()*0.25),w*(0.8+rng()*0.4),k,(rng()-.5)*0.5,pal,rng);
+    }
+  }
+  for(let j=0;j<26;j++)petal(rng()*Math.PI*2,r*reach*(0.07+rng()*0.06),r*0.03,1,(rng()-.5)*0.3,pal,rng);
+  // ışık: sol üstten
+  const hl=ctx.createRadialGradient(-r*0.35,-r*0.4,0,-r*0.2,-r*0.2,r*1.05);
+  hl.addColorStop(0,'rgba(255,245,228,.13)');hl.addColorStop(1,'rgba(255,245,228,0)');
+  ctx.fillStyle=hl;ctx.beginPath();ctx.arc(0,0,r*0.95,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
+function leaf(x,y,ang,size){
+  ctx.save();ctx.translate(x,y);ctx.rotate(ang);
+  const N=48,top=[],bot=[];
+  for(let i=0;i<=N;i++){
+    const t=i/N;
+    const env=Math.pow(Math.sin(Math.PI*Math.min(1,t*1.04)),0.7);
+    const lobe=0.72+0.28*Math.abs(Math.sin(t*Math.PI*3.2+0.2));
+    const hw=env*size*0.3*lobe;
+    top.push([t*size,-hw]);bot.push([t*size,hw*0.92]);
+  }
+  ctx.beginPath();ctx.moveTo(0,0);
+  top.forEach(p=>ctx.lineTo(p[0],p[1]));
+  for(let i=bot.length-1;i>=0;i--)ctx.lineTo(bot[i][0],bot[i][1]);
+  ctx.closePath();
+  const g=ctx.createLinearGradient(0,-size*0.3,0,size*0.3);
+  g.addColorStop(0,'hsl(104,30%,31%)');g.addColorStop(0.5,'hsl(110,32%,23%)');g.addColorStop(1,'hsl(116,30%,14%)');
+  ctx.fillStyle=g;ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,.3)';ctx.lineWidth=1.2;ctx.stroke();
+  ctx.strokeStyle='hsla(90,30%,58%,.45)';ctx.lineWidth=2.4;
+  ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(size*0.5,-size*0.02,size*0.97,0);ctx.stroke();
+  ctx.lineWidth=1.1;ctx.strokeStyle='hsla(90,30%,58%,.28)';
+  [0.22,0.42,0.62,0.8].forEach(t=>{
+    ctx.beginPath();ctx.moveTo(t*size,0);ctx.lineTo((t+0.13)*size,-size*0.17);
+    ctx.moveTo(t*size,0);ctx.lineTo((t+0.13)*size,size*0.16);ctx.stroke();
+  });
+  ctx.restore();
+}
+
+function stem(x1,y1,x2,y2,w){
+  ctx.beginPath();ctx.moveTo(x1,y1);
+  ctx.bezierCurveTo(x1,y1+(y2-y1)*0.5,x2,y2-(y2-y1)*0.4,x2,y2);
+  ctx.lineCap='round';
+  ctx.strokeStyle='hsl(100,30%,20%)';ctx.lineWidth=w;ctx.stroke();
+  ctx.strokeStyle='hsla(90,32%,45%,.35)';ctx.lineWidth=w*0.3;ctx.stroke();
+}
+
+function texture(rng,n,dark){
+  for(let i=0;i<n;i++){
+    const x=rng()*W,y=rng()*H,l=8+rng()*30,a=rng()*Math.PI;
+    ctx.strokeStyle=rng()<0.5?`rgba(70,40,15,${dark})`:'rgba(255,240,210,.05)';
+    ctx.lineWidth=0.8;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);ctx.stroke();
+  }
+}
+
+function backPaper(rng){
+  ctx.save();
+  ctx.beginPath();ctx.moveTo(470,862);ctx.lineTo(100,400);
+  ctx.quadraticCurveTo(140,200,300,118);ctx.quadraticCurveTo(420,170,500,128);
+  ctx.quadraticCurveTo(600,170,700,118);ctx.quadraticCurveTo(860,200,900,400);
+  ctx.lineTo(530,862);ctx.closePath();
+  ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=40*S;ctx.shadowOffsetY=16*S;
+  const g=ctx.createLinearGradient(100,0,900,0);
+  g.addColorStop(0,'hsl(28,30%,30%)');g.addColorStop(0.5,'hsl(30,33%,44%)');g.addColorStop(1,'hsl(26,30%,27%)');
+  ctx.fillStyle=g;ctx.fill();ctx.shadowColor='transparent';
+  ctx.clip();texture(rng,500,.09);
+  ctx.restore();
+  // ince krem ipek kâğıt
+  ctx.save();
+  const pts=[[150,470],[175,300],[235,330],[300,190],[360,250],[445,170],[500,230],[560,165],[640,245],[705,185],[765,325],[825,295],[850,470]];
+  ctx.beginPath();ctx.moveTo(478,850);pts.forEach(p=>ctx.lineTo(p[0],p[1]));ctx.lineTo(522,850);ctx.closePath();
+  ctx.fillStyle='hsla(38,45%,90%,.55)';ctx.fill();
+  ctx.strokeStyle='hsla(38,45%,97%,.5)';ctx.lineWidth=1.2;ctx.stroke();
+  ctx.restore();
+}
+
+function frontPaper(rng){
+  ctx.save();
+  const path=()=>{ctx.beginPath();ctx.moveTo(170,545);ctx.quadraticCurveTo(330,642,500,610);ctx.quadraticCurveTo(670,642,830,545);ctx.lineTo(548,838);ctx.lineTo(452,838);ctx.closePath();};
+  path();
+  ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=24*S;ctx.shadowOffsetY=-6*S;
+  const g=ctx.createLinearGradient(170,0,830,0);
+  g.addColorStop(0,'hsl(29,34%,46%)');g.addColorStop(0.42,'hsl(32,40%,66%)');g.addColorStop(0.6,'hsl(31,38%,60%)');g.addColorStop(1,'hsl(27,32%,38%)');
+  ctx.fillStyle=g;ctx.fill();ctx.shadowColor='transparent';
+  ctx.save();path();ctx.clip();
+  ctx.fillStyle='rgba(30,12,5,.12)';ctx.beginPath();ctx.moveTo(170,545);ctx.lineTo(335,620);ctx.lineTo(452,838);ctx.closePath();ctx.fill();
+  ctx.fillStyle='rgba(30,12,5,.22)';ctx.beginPath();ctx.moveTo(830,545);ctx.lineTo(665,620);ctx.lineTo(548,838);ctx.closePath();ctx.fill();
+  const sh=ctx.createLinearGradient(0,550,0,700);
+  sh.addColorStop(0,'rgba(20,6,4,.45)');sh.addColorStop(1,'rgba(20,6,4,0)');
+  ctx.fillStyle=sh;ctx.fillRect(150,540,700,170);
+  texture(rng,420,.08);
+  ctx.strokeStyle='rgba(255,236,205,.28)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(335,620);ctx.lineTo(452,838);ctx.moveTo(665,620);ctx.lineTo(548,838);ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle='hsla(36,50%,82%,.55)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(170,545);ctx.quadraticCurveTo(330,642,500,610);ctx.quadraticCurveTo(670,642,830,545);ctx.stroke();
+  ctx.restore();
+}
+
+function ribbon(){
+  const satin=(x0,x1)=>{const g=ctx.createLinearGradient(x0,0,x1,0);
+    g.addColorStop(0,'hsl(345,55%,20%)');g.addColorStop(0.3,'hsl(347,55%,40%)');g.addColorStop(0.5,'hsl(345,55%,24%)');g.addColorStop(0.72,'hsl(348,55%,42%)');g.addColorStop(1,'hsl(345,55%,18%)');return g;};
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=12*S;ctx.shadowOffsetY=5*S;
+  ctx.fillStyle=satin(430,590);
+  ctx.beginPath();ctx.moveTo(490,834);ctx.lineTo(503,842);ctx.lineTo(458,960);ctx.lineTo(447,943);ctx.lineTo(428,956);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.moveTo(510,834);ctx.lineTo(497,842);ctx.lineTo(562,952);ctx.lineTo(574,937);ctx.lineTo(592,948);ctx.closePath();ctx.fill();
+  ctx.fillStyle=satin(445,555);
+  ctx.beginPath();ctx.roundRect?ctx.roundRect(446,817,108,27,4):ctx.rect(446,817,108,27);ctx.fill();
+  ctx.fillStyle=satin(400,600);
+  ctx.beginPath();ctx.moveTo(500,830);ctx.bezierCurveTo(470,788,398,772,404,814);ctx.bezierCurveTo(408,852,470,846,500,832);ctx.fill();
+  ctx.beginPath();ctx.moveTo(500,830);ctx.bezierCurveTo(530,788,602,772,596,814);ctx.bezierCurveTo(592,852,530,846,500,832);ctx.fill();
+  ctx.shadowColor='transparent';
+  ctx.fillStyle='rgba(20,4,8,.35)';
+  ctx.beginPath();ctx.moveTo(492,828);ctx.bezierCurveTo(468,804,428,798,428,815);ctx.bezierCurveTo(432,832,470,834,492,830);ctx.fill();
+  ctx.beginPath();ctx.moveTo(508,828);ctx.bezierCurveTo(532,804,572,798,572,815);ctx.bezierCurveTo(568,832,530,834,508,830);ctx.fill();
+  ctx.fillStyle=satin(486,514);
+  ctx.beginPath();ctx.ellipse(500,831,14,16,0,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
+function draw(){
+  const cssW=cv.clientWidth||560, dpr=Math.min(window.devicePixelRatio||1,2.5);
+  cv.width=Math.round(cssW*dpr);cv.height=Math.round(cssW*1.1*dpr);
+  S=cv.width/W;
+  ctx.setTransform(S,0,0,S,0,0);ctx.clearRect(0,0,W,H);
+  const rng=rngFrom(seed), prng=rngFrom(seed^0x5f3759df);
+
+  const spots=[[330,260,70],[440,215,78],[560,210,75],[670,255,72],[250,350,68],[370,325,88],[500,300,95],[630,320,86],[750,350,66],[300,460,80],[430,440,92],[570,445,90],[700,465,78],[370,560,75],[500,555,85],[630,565,72]];
+  const buds=[[185,440,36],[815,445,36],[292,168,32],[712,166,32]];
+  const keys=Object.keys(PAL), bag=[];
+  for(let i=0;i<spots.length+buds.length;i++)bag.push(keys[i%keys.length]);
+  for(let i=bag.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]];}
+  const flowers=spots.concat(buds).map((s,i)=>({
+    x:s[0]+(rng()-.5)*14,y:s[1]+(rng()-.5)*14,r:s[2]*(0.92+rng()*0.16),
+    pal:PAL[bag[i]],rot:rng()*Math.PI*2,sq:0.78+rng()*0.22,open:i<spots.length
+  }));
+
+  backPaper(prng);
+  flowers.forEach((f,i)=>stem(f.x,f.y+f.r*0.2,488+(i%7)*4,835,f.open?8:5));
+  [[262,385,Math.PI+0.35,175],[255,525,Math.PI-0.2,150],[738,375,-0.35,175],[745,525,0.2,150],
+   [425,190,-Math.PI/2-0.5,130],[585,182,-Math.PI/2+0.45,130],[215,255,Math.PI+0.8,125],[790,255,-0.8,125]]
+   .forEach(l=>leaf(l[0],l[1],l[2],l[3]));
+  flowers.slice().sort((a,b)=>a.y-b.y).forEach(f=>mum(f,rng));
+  frontPaper(prng);
+  for(let i=0;i<7;i++){
+    const x1=474+i*8.5, x2=448+i*17+(rng()-.5)*6, y2=1040+(rng()-.5)*30;
+    stem(x1,830,x2,y2,9);
+    ctx.fillStyle='hsl(92,35%,62%)';ctx.beginPath();ctx.ellipse(x2,y2,4.5,2.4,0,0,Math.PI*2);ctx.fill();
+  }
+  ribbon();
+}
+
+let t;
+window.addEventListener('resize',()=>{clearTimeout(t);t=setTimeout(draw,150);});
+document.getElementById('yeni').addEventListener('click',()=>{seed=(Math.random()*1e9)|0;draw();});
+if(document.fonts&&document.fonts.ready){draw();}else{draw();}
+})();
+</script>
+
+</body></html>
