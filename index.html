@@ -53,6 +53,11 @@ canvas{display:block;width:min(100%,560px);max-width:100%;aspect-ratio:1000/1100
   font-size:clamp(1.55rem, 5.4vw, 1.95rem);line-height:1.22;
   text-wrap:balance;
 }
+.note-ek{
+  margin-top:16px;padding-top:14px;
+  border-top:1px solid rgba(43,27,32,.15);
+  font-size:clamp(1.2rem, 4.2vw, 1.45rem);
+}
 .date{
   margin:18px 0 0;
   font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);
@@ -71,6 +76,7 @@ button:focus-visible{outline:2px solid var(--card);outline-offset:3px}
   <canvas id="buket" role="img" aria-label="Sarı, bordo, beyaz, bakır ve pembe kasımpatılardan oluşan, kraft kâğıda sarılı ve kurdeleyle bağlanmış bir buket"></canvas>
   <div class="tag">
     <p class="note">Ne ilk Kasım,<br>ne ilk kasımpatı.<br>Ne son Kasım,<br>ne son kasımpatı.</p>
+    <p class="note note-ek">Sen Kasım'da da çiçek almasan,<br>bari ben dijital vereyim.</p>
     <p class="date">17 Kasım 2026</p>
   </div>
   <button id="yeni" type="button">Yeni buket bağla</button>
